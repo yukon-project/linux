@@ -116,6 +116,9 @@ void start_thread(struct pt_regs *regs, unsigned long pc,
 	unsigned long sp)
 {
 	regs->status = SR_PIE;
+#ifdef CONFIG_RISCV_ROCC
+	regs->status |= SR_XS_INITIAL;
+#endif
 	if (has_fpu()) {
 		regs->status |= SR_FS_INITIAL;
 		/*
