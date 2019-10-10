@@ -23,7 +23,7 @@ void __init time_init(void)
 	if (!cpu || of_property_read_u32(cpu, "timebase-frequency", &prop))
 		panic(KERN_WARNING "RISC-V system with no 'timebase-frequency' in DTS\n");
 	of_node_put(cpu);
-	riscv_timebase = prop;
+	riscv_timebase = prop / CONFIG_RISCV_TIMEBASE_DIV;
 
 	lpj_fine = riscv_timebase / HZ;
 
