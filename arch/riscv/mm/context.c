@@ -217,6 +217,14 @@ static void set_mm_noasid(struct mm_struct *mm)
 
 static inline void set_mm(struct mm_struct *mm, unsigned int cpu)
 {
+#ifdef CONFIG_RISCV_ROCC
+	/*
+	 * Fence to wait for RoCC memory operations to finish, since
+	 * satp is shared between the processor and RoCC accelerators.
+	 */
+	mb();
+#endif
+
 	if (static_branch_unlikely(&use_asid_allocator))
 		set_mm_asid(mm, cpu);
 	else
@@ -226,6 +234,14 @@ static inline void set_mm(struct mm_struct *mm, unsigned int cpu)
 static int __init asids_init(void)
 {
 	unsigned long old;
+
+#ifdef CONFIG_RISCV_ROCC
+	/*
+	 * Fence to wait for RoCC memory operations to finish, since
+	 * satp is shared between the processor and RoCC accelerators.
+	 */
+	mb();
+#endif
 
 	/* Figure-out number of ASID bits in HW */
 	old = csr_read(CSR_SATP);
