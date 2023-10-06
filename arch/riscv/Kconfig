@@ -558,6 +558,21 @@ config RISCV_TIMEBASE_DIV
 	  integer factor slower than reported by the platform.
 	  This makes simulated systems more responsive to user interaction.
 
+config OVERRIDE_RNG_ENTROPY
+        bool "Override rng init entropy with OVERRIDE_RNG_ENTROPY_VALUE"
+        default n
+        help
+          Override the random number generator init entropy during early boot
+          See drivers/char/random.c:random_init_early()
+          This prevents apps from blocking on the rng.
+
+config OVERRIDE_RNG_ENTROPY_VALUE
+        int "Value for rng init entropy"
+        default 256
+        depends on OVERRIDE_RNG_ENTROPY
+        help
+          Default: 256, the minimum required threshold per drivers/char/random.c to initialize the rng
+
 endmenu # "Kernel features"
 
 menu "Boot options"

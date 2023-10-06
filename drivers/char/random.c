@@ -840,6 +840,10 @@ static struct notifier_block pm_notifier = { .notifier_call = random_pm_notifica
  */
 void __init random_init_early(const char *command_line)
 {
+#ifdef CONFIG_OVERRIDE_RNG_ENTROPY
+        _credit_init_bits(CONFIG_OVERRIDE_RNG_ENTROPY_VALUE);
+        pr_notice("overriding entropy value\n");
+#else
 	unsigned long entropy[BLAKE2S_BLOCK_SIZE / sizeof(long)];
 	size_t i, longs, arch_bits;
 
@@ -873,6 +877,7 @@ void __init random_init_early(const char *command_line)
 		crng_reseed(NULL);
 	else if (trust_cpu)
 		_credit_init_bits(arch_bits);
+#endif
 }
 
 /*
