@@ -362,7 +362,7 @@ long strnlen_user_nofault(const void __user *unsafe_addr, long count);
 #ifndef __get_kernel_nofault
 #define __get_kernel_nofault(dst, src, type, label)	\
 do {							\
-	type __user *p = (type __force __user *)(src);	\
+	type __user *p = (type __force __user *)alaska_translate(src);	\
 	type data;					\
 	if (__get_user(data, p))			\
 		goto label;				\
@@ -371,7 +371,7 @@ do {							\
 
 #define __put_kernel_nofault(dst, src, type, label)	\
 do {							\
-	type __user *p = (type __force __user *)(dst);	\
+	type __user *p = (type __force __user *)alaska_translate(dst);	\
 	type data = *(type *)src;			\
 	if (__put_user(data, p))			\
 		goto label;				\
@@ -391,13 +391,13 @@ do {							\
 })
 
 #ifndef user_access_begin
-#define user_access_begin(ptr,len) access_ok(ptr, len)
+#define user_access_begin(ptr,len) access_ok(alaska_translate(ptr), len)
 #define user_access_end() do { } while (0)
 #define unsafe_op_wrap(op, err) do { if (unlikely(op)) goto err; } while (0)
-#define unsafe_get_user(x,p,e) unsafe_op_wrap(__get_user(x,p),e)
-#define unsafe_put_user(x,p,e) unsafe_op_wrap(__put_user(x,p),e)
-#define unsafe_copy_to_user(d,s,l,e) unsafe_op_wrap(__copy_to_user(d,s,l),e)
-#define unsafe_copy_from_user(d,s,l,e) unsafe_op_wrap(__copy_from_user(d,s,l),e)
+#define unsafe_get_user(x,p,e) unsafe_op_wrap(__get_user(x,alaska_translate(p)),e)
+#define unsafe_put_user(x,p,e) unsafe_op_wrap(__put_user(x,alaska_translate(p)),e)
+#define unsafe_copy_to_user(d,s,l,e) unsafe_op_wrap(__copy_to_user(alaska_translate(d),s,l),e)
+#define unsafe_copy_from_user(d,s,l,e) unsafe_op_wrap(__copy_from_user(d,alaska_translate(s),l),e)
 static inline unsigned long user_access_save(void) { return 0UL; }
 static inline void user_access_restore(unsigned long flags) { }
 #endif

@@ -10,6 +10,7 @@
 
 #include <asm/asm-extable.h>
 #include <asm/pgtable.h>		/* for TASK_SIZE */
+#include <linux/alaska.h>
 
 /*
  * User space memory access functions
@@ -130,7 +131,7 @@ do {								\
  */
 #define __get_user(x, ptr)					\
 ({								\
-	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);	\
+	const __typeof__(*(ptr)) __user *__gu_ptr = alaska_translate((void*)(ptr));	\
 	long __gu_err = 0;					\
 								\
 	__chk_user_ptr(__gu_ptr);				\
@@ -161,7 +162,7 @@ do {								\
  */
 #define get_user(x, ptr)					\
 ({								\
-	const __typeof__(*(ptr)) __user *__p = (ptr);		\
+	const __typeof__(*(ptr)) __user *__p = alaska_translate((void*)(ptr));	\
 	might_fault();						\
 	access_ok(__p, sizeof(*__p)) ?		\
 		__get_user((x), __p) :				\
@@ -277,7 +278,7 @@ do {								\
  */
 #define put_user(x, ptr)					\
 ({								\
-	__typeof__(*(ptr)) __user *__p = (ptr);			\
+	__typeof__(*(ptr)) __user *__p = alaska_translate(ptr);			\
 	might_fault();						\
 	access_ok(__p, sizeof(*__p)) ?		\
 		__put_user((x), __p) :				\
@@ -293,14 +294,16 @@ unsigned long __must_check __asm_copy_from_user(void *to,
 static inline unsigned long
 raw_copy_from_user(void *to, const void __user *from, unsigned long n)
 {
-	return __asm_copy_from_user(to, from, n);
+	return __asm_copy_from_user(to, __alaska_translate((void*)from, raw_copy_from_user), n);
 }
 
 static inline unsigned long
 raw_copy_to_user(void __user *to, const void *from, unsigned long n)
 {
-	return __asm_copy_to_user(to, from, n);
+	return __asm_copy_to_user(__alaska_translate(to, raw_copy_from_user), from, n);
 }
+
+
 
 extern long strncpy_from_user(char *dest, const char __user *src, long count);
 

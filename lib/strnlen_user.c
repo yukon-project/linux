@@ -26,6 +26,8 @@ static __always_inline long do_strnlen_user(const char __user *src, unsigned lon
 	unsigned long align, res = 0;
 	unsigned long c;
 
+  src = (const char __user*)alaska_translate((void*)src);
+
 	/*
 	 * Do everything aligned. But that means that we
 	 * need to also expand the maximum..
@@ -92,6 +94,8 @@ efault:
 long strnlen_user(const char __user *str, long count)
 {
 	unsigned long max_addr, src_addr;
+
+  str = (const char __user*)alaska_translate((void*)str);
 
 	if (unlikely(count <= 0))
 		return 0;

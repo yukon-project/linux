@@ -12,6 +12,8 @@
 #include <asm/byteorder.h>
 #include <asm/word-at-a-time.h>
 
+#include <linux/alaska.h>
+
 #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
 #define IS_UNALIGNED(src, dst)	0
 #else
@@ -30,6 +32,8 @@ static __always_inline long do_strncpy_from_user(char *dst, const char __user *s
 {
 	const struct word_at_a_time constants = WORD_AT_A_TIME_CONSTANTS;
 	unsigned long res = 0;
+
+  src = alaska_translate(src);
 
 	if (IS_UNALIGNED(src, dst))
 		goto byte_at_a_time;
@@ -114,7 +118,13 @@ long strncpy_from_user(char *dst, const char __user *src, long count)
 {
 	unsigned long max_addr, src_addr;
 
+
+
 	might_fault();
+
+  src = alaska_translate(src);
+
+
 	if (should_fail_usercopy())
 		return -EFAULT;
 	if (unlikely(count <= 0))
