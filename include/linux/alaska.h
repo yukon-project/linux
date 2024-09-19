@@ -12,7 +12,7 @@
 #pragma once
 #include <linux/kernel.h>
 
-#define HANDLE_OFFSET_SIZE 24
+#define HANDLE_OFFSET_SIZE 32
 
 typedef unsigned long (*copy_from_user_fn_t)(void *, const void *, unsigned long);
 

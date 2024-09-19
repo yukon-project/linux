@@ -867,6 +867,8 @@ struct task_struct {
 	struct rb_node			pushable_dl_tasks;
 #endif
 
+  unsigned long        htbase;
+
 	struct mm_struct		*mm;
 	struct mm_struct		*active_mm;
 
