@@ -36,9 +36,10 @@ static inline void *__alaska_translate(void *vaddr, copy_from_user_fn_t copy)
 	result = (uint64_t)((uint64_t)hte +
 			    (addr & ((1LU << HANDLE_OFFSET_SIZE) - 1)));
 
-	// printk(KERN_INFO "alaska_translate(%llx) -> %llx\n", addr, result);
+	printk(KERN_INFO "alaska_translate(%llx) -> %llx\n", addr, result);
 
-	return (void *)result;
+	return (void*) result;
+	// return (void *)((uint64_t) vaddr & ~(1LU << 63));
 }
 
 #define alaska_translate(x) \

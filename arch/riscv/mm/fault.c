@@ -213,12 +213,18 @@ asmlinkage void do_page_fault(struct pt_regs *regs)
 	unsigned int flags = FAULT_FLAG_DEFAULT;
 	int code = SEGV_MAPERR;
 	vm_fault_t fault;
+  // unsigned long htbase;
 
 	cause = regs->cause;
 	addr = regs->badaddr;
 
 	tsk = current;
 	mm = tsk->mm;
+
+// asm volatile ("csrr %0, 0xc2" : "=r"(htbase));
+//       if (htbase != 0) {
+//   printk("page fault at 0x%zx\n", (off_t)addr);
+// }
 
 	if (kprobe_page_fault(regs, cause))
 		return;
