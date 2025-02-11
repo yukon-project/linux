@@ -22,6 +22,11 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (size > MEM_SIZE)
 		return -EINVAL;
 
+
+  __asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(device_buffer)) : "memory");
+  __asm__ volatile("csrw 0xc5, %0" ::"rK"(4096 / 8) : "memory");
+  pr_info("handle table at 0x%llx\n", __pa(device_buffer));
+
 	return remap_pfn_range(vma, vma->vm_start,
 			       __pa(device_buffer) >> PAGE_SHIFT, size,
 			       vma->vm_page_prot);
@@ -71,9 +76,6 @@ static int __init my_module_init(void)
 	// Allocate memory
 	device_buffer = kmalloc(MEM_SIZE, GFP_KERNEL);
   memset(device_buffer, 0, MEM_SIZE);
-  __asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(device_buffer)) : "memory");
-  __asm__ volatile("csrw 0xc5, %0" ::"rK"(4096 / 8) : "memory");
-  pr_info("handle table at 0x%llx\n", __pa(device_buffer));
 
 	if (!device_buffer) {
 		pr_err("Failed to allocate memory\n");
