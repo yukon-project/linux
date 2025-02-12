@@ -12,23 +12,32 @@
 static dev_t dev_num;
 static struct cdev my_cdev;
 static struct class *my_class;
-static char *device_buffer;
+struct page *handle_table_page = 0;
 
 /* mmap function */
 static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	unsigned long size = vma->vm_end - vma->vm_start;
+	void *handle_table_ptr = NULL;
 
 	if (size > MEM_SIZE)
 		return -EINVAL;
 
+	if (handle_table_page == 0) {
+		handle_table_page =
+			alloc_pages(GFP_KERNEL, 9 /* order 9 is 2mb */);
+	}
 
-  __asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(device_buffer)) : "memory");
-  __asm__ volatile("csrw 0xc5, %0" ::"rK"(4096 / 8) : "memory");
-  pr_info("handle table at 0x%llx\n", __pa(device_buffer));
+	handle_table_ptr = page_address(handle_table_page);
+
+	__asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(handle_table_ptr))
+			 : "memory");
+	__asm__ volatile("csrw 0xc5, %0" ::"rK"(4096 / 8) : "memory");
+
+	pr_info("handle table at 0x%llx\n", __pa(handle_table_ptr));
 
 	return remap_pfn_range(vma, vma->vm_start,
-			       __pa(device_buffer) >> PAGE_SHIFT, size,
+			       __pa(handle_table_ptr) >> PAGE_SHIFT, size,
 			       vma->vm_page_prot);
 }
 
@@ -73,18 +82,14 @@ static int __init my_module_init(void)
 		return -1;
 	}
 
-	// Allocate memory
-	device_buffer = kmalloc(MEM_SIZE, GFP_KERNEL);
-  memset(device_buffer, 0, MEM_SIZE);
-
-	if (!device_buffer) {
-		pr_err("Failed to allocate memory\n");
-		device_destroy(my_class, dev_num);
-		class_destroy(my_class);
-		cdev_del(&my_cdev);
-		unregister_chrdev_region(dev_num, 1);
-		return -ENOMEM;
-	}
+	/* if (!device_buffer) { */
+	/* 	pr_err("Failed to allocate memory\n"); */
+	/* 	device_destroy(my_class, dev_num); */
+	/* 	class_destroy(my_class); */
+	/* 	cdev_del(&my_cdev); */
+	/* 	unregister_chrdev_region(dev_num, 1); */
+	/* 	return -ENOMEM; */
+	/* } */
 
 	pr_info("my_mmap_device initialized\n");
 	return 0;
@@ -93,7 +98,7 @@ static int __init my_module_init(void)
 /* Module Exit */
 static void __exit my_module_exit(void)
 {
-	kfree(device_buffer);
+	/* kfree(device_buffer); */
 	device_destroy(my_class, dev_num);
 	class_destroy(my_class);
 	cdev_del(&my_cdev);
