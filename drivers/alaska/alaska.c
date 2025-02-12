@@ -19,20 +19,23 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	unsigned long size = vma->vm_end - vma->vm_start;
 	void *handle_table_ptr = NULL;
+	long bytes;
+	int order = 9;
 
 	if (size > MEM_SIZE)
 		return -EINVAL;
 
 	if (handle_table_page == 0) {
 		handle_table_page =
-			alloc_pages(GFP_KERNEL, 9 /* order 9 is 2mb */);
+			alloc_pages(GFP_KERNEL, order /* order 9 is 2mb */);
+		bytes = (1LU << order) * 4096;
+
+	  __asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(page_address(handle_table_page)))
+			 : "memory");
+	__asm__ volatile("csrw 0xc5, %0" ::"rK"(bytes / 8) : "memory");
 	}
 
 	handle_table_ptr = page_address(handle_table_page);
-
-	__asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(handle_table_ptr))
-			 : "memory");
-	__asm__ volatile("csrw 0xc5, %0" ::"rK"(4096 / 8) : "memory");
 
 	pr_info("handle table at 0x%llx\n", __pa(handle_table_ptr));
 
