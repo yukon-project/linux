@@ -22,8 +22,8 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 	int order = 9;
   unsigned long bytes = (1LU << order) * 4096;
 
-	if (size > MEM_SIZE)
-		return -EINVAL;
+	/* if (size > MEM_SIZE) */
+	/* 	return -EINVAL; */
 
 	if (handle_table_page == 0) {
 		handle_table_page =
