@@ -1,1 +1,1 @@
-obj-y   +=  alaska.o
+obj-y   +=  alaska_contig.o alaska_multilevel.o

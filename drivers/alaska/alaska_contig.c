@@ -6,13 +6,13 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 
-#define DEVICE_NAME "alaska"
+#define DEVICE_NAME "handle_table_contig"
 #define MEM_SIZE PAGE_SIZE
 
 static dev_t dev_num;
 static struct cdev my_cdev;
 static struct class *my_class;
-struct page *handle_table_page = 0;
+static struct page *handle_table_page = 0;
 
 /* mmap function */
 static int my_mmap(struct file *filp, struct vm_area_struct *vma)
@@ -20,7 +20,7 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 	unsigned long size = vma->vm_end - vma->vm_start;
 	void *handle_table_ptr = NULL;
 	int order = 9;
-  unsigned long bytes = (1LU << order) * 4096;
+	unsigned long bytes = (1LU << order) * 4096;
 
 	/* if (size > MEM_SIZE) */
 	/* 	return -EINVAL; */
@@ -29,15 +29,16 @@ static int my_mmap(struct file *filp, struct vm_area_struct *vma)
 		handle_table_page =
 			alloc_pages(GFP_KERNEL, order /* order 9 is 2mb */);
 
-
-	  __asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(page_address(handle_table_page)))
-			 : "memory");
-	__asm__ volatile("csrw 0xc5, %0" ::"rK"(bytes / 8) : "memory");
+		__asm__ volatile("csrw 0xc2, %0" ::"rK"(
+					 __pa(page_address(handle_table_page)))
+				 : "memory");
+		__asm__ volatile("csrw 0xc5, %0" ::"rK"(bytes / 8) : "memory");
 	}
 
 	handle_table_ptr = page_address(handle_table_page);
 
-	pr_info("handle table at 0x%llx, %lu bytes\n", __pa(handle_table_ptr), bytes);
+	pr_info("handle table at 0x%llx, %lu bytes\n", __pa(handle_table_ptr),
+		bytes);
 
 	return remap_pfn_range(vma, vma->vm_start,
 			       __pa(handle_table_ptr) >> PAGE_SHIFT, size,
