@@ -18,33 +18,33 @@ static struct class *my_class;
  * 18 bits worth of 8 byte values). The application indexes into it using
  * "handle ids", which are 32 bits currently, and select a given 8 byte value in
  * the two-level handle table.
- * 
- * the funky thing is that the userspace must be able to access the leaf nodes of 
+ *
+ * the funky thing is that the userspace must be able to access the leaf nodes of
  * the handle table in a contiguous manner, so we need to manage the handle table
  * sparsely, but map it contiguously.
- * 
+ *
  * We also have to worry about the fact that the hardware wants the *physical addresses*
  * of the handle table, and therefore we have to keep track of two different 'tables'.
- * 
+ *
  * One table is the physical handle table (pht) which is the base address of the
  * handle table in physical memory. The other is the virtual handle table (vht)
  * which is the base address of the handle table in virtual memory that the kernel can touch.
- * 
+ *
  * We name the handle table levels as follows:
  *   - ht0: The top level handle table. Each entry of this points to a 2mb page of ht1.
  *          CSR 0xc2 points to ht0.
  *   - ht1: The leaf level of the handle table. Each ht1 is a 2mb page, which is managed
  *          entirely by the userspace application in a virtually contiguous manner.
  *          The kernel hides the fact these are many pages.
- * 
+ *
  * Because of how the hardware works, the handle table must not be sparse. That is,
  * if entry N is non-zero in the ht0, there can be no entry M in the ht0 where M < N
  * that is zero. This is because instead of adding checking in the hardware, we assume
  * the kernel will fill out the 0xc5 CSR with the number of total entries in the handle
  * table (ie: the maxiumum handle id that is permitted).
- * 
+ *
  * The whole interface to manage a `struct alaska_handle_table` is simply to allocate/initialize
- * it (which sets 0xc2), and to "get" the address of a certain ht1. There's also a function to 
+ * it (which sets 0xc2), and to "get" the address of a certain ht1. There's also a function to
  * deallocate one.
  */
 
@@ -73,7 +73,7 @@ static void *alaska_allocate_ht(void)
 
 	p = page_address(newpage);
 	memset(p, 0, HT_SIZE);
-	// printk("allocate new ht at v=%lx, p=%lx\n", (unsigned long)p, __pa(p));
+	printk("allocate new ht at v=%lx, p=%lx\n", (unsigned long)p, __pa(p));
 	return p;
 }
 
@@ -96,8 +96,6 @@ static void *alaska_get_ht1(struct alaska_handle_table *ht, unsigned index)
 	unsigned int i;
 
 	if (index >= ht->length) {
-		// printk("index %u is greater than length %u\n", index,
-		//        ht->length);
 		// allocate an entry for it.
 		for (i = ht->length; i <= index; i++) {
 			if (ht->ht0[i] == NULL) {
@@ -108,6 +106,10 @@ static void *alaska_get_ht1(struct alaska_handle_table *ht, unsigned index)
 		__asm__ volatile("csrw 0xc5, %0" ::"rK"(ht->length * HT_ENTRIES)
 				 : "memory");
 	}
+
+  // for (i = 0; i < ht->length; i++) {
+  //   printk("ht0[%2d]: %zx\n", i, ht->ht0[i]);
+  // }
 
 	return ht->ht0[index];
 }
@@ -147,8 +149,10 @@ static vm_fault_t alaska_vma_fault(struct vm_fault *vmf)
 
 	page = pfn_to_page((unsigned long)(ht1 + bytes_into_ht1) >> PAGE_SHIFT);
 	pfn = page_to_pfn(page);
+
+  // printk("remap_pfn_range %16zx %16zx %16zx %x", vmf->vma->vm_start + byte_off, pfn, 4096, vmf->vma->vm_page_prot);
 	int err = remap_pfn_range(vmf->vma, vmf->vma->vm_start + byte_off, pfn,
-				  HT_SIZE, vmf->vma->vm_page_prot);
+				  4096, vmf->vma->vm_page_prot);
 	if (err) {
 		printk("remap_pfn_range failed\n");
 		return err;
@@ -166,6 +170,7 @@ static struct vm_operations_struct alaska_vm_ops = {
 static int alaska_handle_table_mmap(struct file *filp,
 				    struct vm_area_struct *vma)
 {
+  printk("alaska mmap %zx - %zx\n", vma->vm_start, vma->vm_end);
 	unsigned long region_size = vma->vm_end - vma->vm_start;
 	unsigned long entries = region_size / HT_SIZE;
 	unsigned long i;
