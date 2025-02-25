@@ -125,11 +125,14 @@ static vm_fault_t alaska_vma_fault(struct vm_fault *vmf)
 	unsigned long index = byte_off / HT_SIZE;
 	unsigned long bytes_into_ht1 = byte_off % HT_SIZE;
 	unsigned long pfn = 0;
+  unsigned long map_address = vmf->address & ~0xfff;
 	struct page *page;
 
 	// printk("fault address:        0x%lx\n", vmf->address);
+	// printk("map address:          0x%lx\n", map_address);
 	// printk("fault pgoff:          0x%lx\n", vmf->pgoff);
 	// printk("fault index:          %lx\n", index);
+	// printk("fault byte_off:       0x%lx\n", byte_off);
 	// printk("fault bytes_into_ht1: %lx\n", bytes_into_ht1);
 	// printk("vma start:            0x%lx\n", vmf->vma->vm_start);
 	// printk("vma end:              0x%lx\n", vmf->vma->vm_end);
@@ -150,8 +153,8 @@ static vm_fault_t alaska_vma_fault(struct vm_fault *vmf)
 	page = pfn_to_page((unsigned long)(ht1 + bytes_into_ht1) >> PAGE_SHIFT);
 	pfn = page_to_pfn(page);
 
-  // printk("remap_pfn_range %16zx %16zx %16zx %x", vmf->vma->vm_start + byte_off, pfn, 4096, vmf->vma->vm_page_prot);
-	int err = remap_pfn_range(vmf->vma, vmf->vma->vm_start + byte_off, pfn,
+  // printk("remap_pfn_range %16zx %16zx %16zx %x", map_address, pfn, 4096, vmf->vma->vm_page_prot);
+	int err = remap_pfn_range(vmf->vma, map_address, pfn,
 				  4096, vmf->vma->vm_page_prot);
 	if (err) {
 		printk("remap_pfn_range failed\n");
