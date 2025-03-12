@@ -231,10 +231,14 @@ static ssize_t alaska_read(struct file *filp, char __user *buf, size_t len,
 	alaska_dump_page_virtual = page_address(alaska_dump_page);
 	alaska_dump_page_physical = __pa(alaska_dump_page_virtual);
 
+	asm volatile("fence" ::: "memory");
 	write_csr(CSR_HTDUMP, (uint64_t)alaska_dump_page_physical);
+	asm volatile("fence" ::: "memory");
+
 	do {
 		read_csr(CSR_HTDUMP, dump_reg);
 	} while (dump_reg);
+	asm volatile("fence" ::: "memory");
 
 	// TODO: dump
 
