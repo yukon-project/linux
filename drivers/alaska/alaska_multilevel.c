@@ -77,14 +77,6 @@ static void *alaska_allocate_ht(void)
 	return p;
 }
 
-static void alaska_handle_table_init(struct alaska_handle_table *ht)
-{
-	ht->length = 0;
-	ht->ht0 = alaska_allocate_ht();
-	__asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(ht->ht0)) : "memory");
-	__asm__ volatile("csrw 0xc5, %0" ::"rK"(ht->length * HT_ENTRIES)
-			 : "memory");
-}
 
 static void *alaska_get_ht1(struct alaska_handle_table *ht, unsigned index)
 {
@@ -112,6 +104,18 @@ static void *alaska_get_ht1(struct alaska_handle_table *ht, unsigned index)
   // }
 
 	return ht->ht0[index];
+}
+
+
+static void alaska_handle_table_init(struct alaska_handle_table *ht)
+{
+	ht->length = 0;
+	ht->ht0 = alaska_allocate_ht();
+	__asm__ volatile("csrw 0xc2, %0" ::"rK"(__pa(ht->ht0)) : "memory");
+	__asm__ volatile("csrw 0xc5, %0" ::"rK"(ht->length * HT_ENTRIES)
+			 : "memory");
+  // Initialize 16 entries
+  alaska_get_ht1(ht, 16);
 }
 
 // Currently, we only support a single handle table in the system.
